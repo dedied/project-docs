@@ -3,6 +3,7 @@ import { defineConfig } from 'vitepress';
 export default defineConfig({
     title: 'FitTrack Pro Docs',
     description: 'Architecture and product documentation',
+    markdown: { mermaid: true },
     themeConfig: {
         sidebar: {
             '/fittrack-pro/': [
