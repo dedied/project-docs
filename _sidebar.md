@@ -1,5 +1,6 @@
 * [Home](/)
 * [Fit Track Pro](./fittrack-pro/index.md)
+  * [Architecture](./fittrack-pro/architecture.md)
   * [Database](./fittrack-pro/database/index.md)
   * [Hosting](./fittrack-pro/hosting/index.md)
   * [Payment](./fittrack-pro/payment/index.md)
