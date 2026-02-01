@@ -9,7 +9,11 @@ export default defineConfig({
             {
                 text: 'FitTrack Pro',
                 items: [
-                { text: 'Architecture', link: '/architecture' }
+                    { text: 'Architecture', link: '/architecture' },
+                    { text: 'Database', link: '/database' },
+                    { text: 'Hosting', link: '/hosting' },
+                    { text: 'Payment', link: '/payment' },
+                    { text: 'Testing', link: '/testing' }
                 ]
             }
             ]
