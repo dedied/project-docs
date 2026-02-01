@@ -26,7 +26,7 @@ FitTrack Pro uses an **Offline-First** approach with a "Cloud-Wins" conflict res
     - If a specific log ID exists in both Local Storage and the Cloud, **the Cloud version is treated as the source of truth** and overwrites the local version.
     - This prevents stale local data on one device from overwriting edits made on another device.
 
-## [Database](./database/index.md)
+## [Database](/fittrack-pro/database/)
 
 
 ## Premium Subscription Setup (Stripe)
