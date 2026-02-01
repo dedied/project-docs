@@ -1,6 +1,14 @@
 # Premium Subscription Setup (Stripe)
 
-Follow these steps to enable premium subscriptions via Stripe.
+Follow these steps to enable premium subscriptions via Stripe. The general workflow for Stripe is that you can switch between a `Test` area and a `Live` area. The `Test` area is what you use for testing and will have a `webhook` specifically pointing to your `test` instance of supabase.
+
+**Important:** To ensure your application is correctly connected to the **production Stripe environment**, update the following variables in the client-side `App.tsx` file on the `staging` branch **before** promoting it to `production`:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+
+These values must point to your production Supabase project so payments and authentication are handled by the correct instance.
+
 
 ## Stripe Setup
 - Go to your [Stripe Dashboard](https://dashboard.stripe.com/).
@@ -156,9 +164,9 @@ serve(async (req) => {
 });
 ```
 ## Deploy Functions & Webhook
-- Deploy both functions using the Supabase CLI: `supabase functions deploy create-stripe-checkout` and `supabase functions deploy stripe-webhook`.
+- You can create and deploy both edge functions via the Supabase UI.
 - Go to **Stripe Dashboard > Developers > Webhooks**.
-- Create a new webhook endpoint. The URL is your Supabase webhook function URL.
+- Create a new webhook endpoint called `stripe-webhook`. The URL that it points to is your Supabase webhook function URL also called `stripe-webhook`.
 - Select the event `checkout.session.completed`.
 - Reveal and copy the **Signing secret** and add it as a new secret in Supabase Edge Functions: `STRIPE_WEBHOOK_SIGNING_SECRET`.
 

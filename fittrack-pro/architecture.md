@@ -207,6 +207,23 @@ graph TD
 ## Deployment Pipeline
 
 ### Test
+- via the `main` git branch
+```mermaid
+graph LR
+    A["Developer"] -->|Push Code| B["GitHub Repo: main"]
+    B -->|Webhook| C["Vercel"]
+    C -->|Build| D["npm install<br/>npm run build"]
+    D -->|Serve| E["Vercel testing site"]
+```
+
+### Staging
+- via the `staging` git branch
+- this gives you the chance to ensure your application is correctly connected to the **production Stripe environment**, by updating the following variables in the client-side `App.tsx` file **before** promoting it to `production`:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+
+These values must point to your production Supabase project so payments and authentication are handled by the correct instance.
 
 ```mermaid
 graph LR
@@ -217,6 +234,7 @@ graph LR
 ```
 
 ### Production
+- via the `production` git branch
 
 ```mermaid
 graph LR
