@@ -11,10 +11,16 @@
   <div id="app"></div>
   <script>
     window.$docsify = {
-      basePath: '/project-docs/',
-      loadSidebar: true
+      name: 'FitTrack Pro',
+      loadSidebar: true,
+      cache: false,
+      requestHeaders: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
     }
   </script>
+
 
   <script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script>
 </body>
