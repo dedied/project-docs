@@ -14,13 +14,23 @@
       name: 'FitTrack Pro',
       loadSidebar: true,
       cache: false,
-      requestHeaders: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      },
-      version: '1.0.3'
+      version: '1.0.4',
+      plugins: [
+        function (hook) {
+          hook.beforeEach(function (content) {
+            if (content.includes('<!-- DOCS_VERSION -->')) {
+              return content.replace(
+                '<!-- DOCS_VERSION -->',
+                `**Docs version:** ${window.$docsify.version}`
+              )
+            }
+            return content
+          })
+        }
+      ]
     }
   </script>
+
 
   <script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script>
 </body>

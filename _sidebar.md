@@ -4,8 +4,6 @@
   * [Hosting](./fittrack-pro/hosting/index.md)
   * [Payment](./fittrack-pro/payment/index.md)
   * [Testing](./fittrack-pro/testing/index.md)
----
 
-**Docs version:** {{version}}
+<!-- DOCS_VERSION -->
 
----
