@@ -96,32 +96,33 @@ B -->|Yes| C[Return CORS preflight response]
 B -->|No| D[Continue]
 
 %% --- User Client Setup ---
-D --> E[Create Supabase User Client<br/>(anon key + JWT)]
+D --> E[Create Supabase User Client\n(anon key + JWT)]
 E --> F[Get user via auth.getUser()]
 F --> G{User found?}
 G -->|No| H[Throw error: User not found]
 G -->|Yes| I[Fetch profile: stripe_customer_id]
 
 %% --- Admin Client Setup ---
-I --> J[Create Admin Supabase Client<br/>(service role key)]
+I --> J[Create Admin Supabase Client\n(service role key)]
 
 %% --- Stripe Customer Handling ---
 J --> K{Has stripe_customer_id?}
 K -->|Yes| L[Use existing customerId]
-K -->|No| M[Create Stripe customer<br/>with user.email]
-M --> N[Save new customerId<br/>to profiles table]
+K -->|No| M[Create Stripe customer\nwith user.email]
+M --> N[Save new customerId\nto profiles table]
 
 %% --- Determine Origin ---
 L --> O[Determine origin header or SITE_URL]
 N --> O
 
 %% --- Create Checkout Session ---
-O --> P[Create Stripe Checkout Session<br/>payment_method_types: card<br/>line_items: price ID<br/>mode: payment<br/>success_url / cancel_url]
+O --> P[Create Stripe Checkout Session\npayment_method_types: card\nline_items: price ID\nmode: payment\nsuccess_url / cancel_url]
 
 P --> Q[Return JSON { url: session.url }]
 
 %% --- Error Handling ---
 H --> R[Return 500 JSON error]
+
 
 ```
 
@@ -135,24 +136,25 @@ A[Stripe sends webhook request] --> B[Extract Stripe-Signature header]
 B --> C[Read raw request body as text]
 
 %% --- Verify Signature ---
-C --> D[Construct Stripe event<br/>using signing secret + crypto provider]
+C --> D[Construct Stripe event\nusing signing secret and crypto provider]
 D --> E{Signature valid?}
 E -->|No| F[Return 400 Webhook Error]
 E -->|Yes| G[Process event]
 
 %% --- Event Handling ---
 G --> H{event.type == 'checkout.session.completed'?}
-H -->|No| I[Return 200 {received: true}]
+H -->|No| I[Return 200 received: true]
 H -->|Yes| J[Extract session object]
 
 J --> K[Get customerId = session.customer]
 
 %% --- Update Database ---
-K --> L[Create Admin Supabase Client<br/>(service role key)]
-L --> M[Update profiles<br/>set is_premium = true<br/>where stripe_customer_id = customerId]
+K --> L[Create Admin Supabase Client\n(service role key)]
+L --> M[Update profiles\nset is_premium = true\nwhere stripe_customer_id = customerId]
 
 %% --- Success Response ---
-M --> N[Return 200 {received: true}]
+M --> N[Return 200 received: true]
+
 
 ```
 
