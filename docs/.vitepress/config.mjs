@@ -13,6 +13,7 @@ export default defineConfig({
                 ]
             }
             ]
-        }
+        },
+        outline: [2, 6]
     }
 });

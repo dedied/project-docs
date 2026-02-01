@@ -1,7 +1,7 @@
 # FitTrack Pro - System Architecture Diagram
 
 ## User sign up and premium check flow
-
+[Mermaid Live Editor](https://mermaid.live/edit)
 ```mermaid
 flowchart TD
 
@@ -29,7 +29,7 @@ O --> P[Redirect user to Stripe Checkout]
 ```
 
 ## Stripe Checkout + Webhook Confirmation
-
+[Mermaid Live Editor](https://mermaid.live/edit)
 ```mermaid
 sequenceDiagram
     participant U as User
@@ -84,8 +84,8 @@ sequenceDiagram
     SW-->>WH: 200 {received: true}
 
 ```
-
 ## Edge Function: create-stripe-checkout
+[Mermaid Live Editor](https://mermaid.live/edit)
 
 ```mermaid
 flowchart TD
@@ -126,6 +126,7 @@ H --> R["Return 500 JSON error"]
 ```
 
 ## Edge Function: stripe-webhook
+[Mermaid Live Editor](https://mermaid.live/edit)
 
 ```mermaid
 flowchart TD
@@ -153,12 +154,10 @@ L --> M["Update profiles: set is_premium = true where stripe_customer_id matches
 
 %% --- Success Response ---
 M --> N["Return 200 received: true"]
-
-
 ```
 
-
 ## Data Flow: Sync Strategy (Premium)
+[Mermaid Live Editor](https://mermaid.live/edit)
 
 ```mermaid
 sequenceDiagram
@@ -185,8 +184,8 @@ sequenceDiagram
     App->>LocalDB: Mark synced
 ```
 
-
 ## Security & Authentication
+[Mermaid Live Editor](https://mermaid.live/edit)
 
 ```mermaid
 graph TD
@@ -208,6 +207,9 @@ graph TD
 
 ### Test
 - via the `main` git branch
+
+[Mermaid Live Editor](https://mermaid.live/edit)
+
 ```mermaid
 graph LR
     A["Developer"] -->|Push Code| B["GitHub Repo: main"]
@@ -222,6 +224,8 @@ graph LR
   - `SUPABASE_URL`
   - `SUPABASE_ANON_KEY`
 
+[Mermaid Live Editor](https://mermaid.live/edit)
+
 ```mermaid
 graph LR
     A["Developer"] -->|Push Code| B["GitHub Repo: main"]
@@ -231,6 +235,8 @@ graph LR
 ```
 
 ### Production
+[Mermaid Live Editor](https://mermaid.live/edit)
+
 - via the `production` git branch
 
 ```mermaid

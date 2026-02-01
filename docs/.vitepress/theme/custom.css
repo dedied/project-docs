@@ -1,0 +1,20 @@
+/* Accent bar style */
+.VPDocOutlineItem .outline-link {
+  display: block;
+  padding: 0.4rem 0.75rem;
+  border-left: 3px solid transparent;
+  white-space: normal;
+  line-height: 1.4;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.VPDocOutlineItem .outline-link:hover {
+  border-left-color: var(--vp-c-brand-1);
+  background: var(--vp-c-bg-soft);
+}
+
+/* Level-3 indentation */
+.VPDocOutlineItem .outline-link.level-3 {
+  padding-left: 1.25rem;
+  border-left-width: 2px;
+}
