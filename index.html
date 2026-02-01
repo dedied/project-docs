@@ -16,7 +16,7 @@
       cache: false,
       mermaid: true
     };
-    window.$docsify = window.$docsify || {};
+
   </script>
 
 
@@ -24,14 +24,15 @@
 <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docsify-mermaid/dist/docsify-mermaid.min.js"></script>
 
+
 <script>
 (function () {
-  function addCopyButtons() {
+  function attachMermaidCopyButtons() {
     document.querySelectorAll('pre[data-lang="mermaid"]').forEach(pre => {
-      if (pre.dataset.copyAttached) return;
+      if (pre.dataset.copyReady) return;
 
       const button = document.createElement('button');
-      button.textContent = 'Copy diagram';
+      button.textContent = 'Copy source';
       button.style.cssText = `
         position: absolute;
         top: 6px;
@@ -39,6 +40,7 @@
         font-size: 12px;
         padding: 4px 8px;
         cursor: pointer;
+        z-index: 10;
       `;
 
       const wrapper = document.createElement('div');
@@ -51,20 +53,21 @@
       button.addEventListener('click', () => {
         const code = pre.querySelector('code')?.innerText || '';
         navigator.clipboard.writeText(code);
-        button.textContent = 'Copied!';
-        setTimeout(() => (button.textContent = 'Copy diagram'), 1200);
+        button.textContent = 'Copied';
+        setTimeout(() => (button.textContent = 'Copy source'), 1200);
       });
 
-      pre.dataset.copyAttached = 'true';
+      pre.dataset.copyReady = 'true';
     });
   }
 
   window.$docsify = window.$docsify || {};
   window.$docsify.plugins = (window.$docsify.plugins || []).concat(function (hook) {
-    hook.doneEach(addCopyButtons);
+    hook.doneEach(attachMermaidCopyButtons);
   });
 })();
 </script>
+
 
 
 <script>
