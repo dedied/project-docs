@@ -6,18 +6,19 @@ export default defineConfig({
     themeConfig: {
         sidebar: {
             '/': [
-            {
-                text: 'FitTrack Pro',
-                items: [
-                    { text: 'Architecture', link: '/architecture' },
-                    { text: 'Database', link: '/database' },
-                    { text: 'Hosting', link: '/hosting' },
-                    { text: 'Payment', link: '/payment' },
-                    { text: 'Testing', link: '/testing' }
-                ]
-            }
+                {
+                    text: 'FitTrack Pro',
+                    items: [
+                        { text: 'Architecture', link: '/architecture' },
+                        { text: 'Database', link: '/database' },
+                        { text: 'Hosting', link: '/hosting' },
+                        { text: 'Payment', link: '/payment' },
+                        { text: 'Testing', link: '/testing' }
+                    ]
+                }
             ]
         },
-        outline: [2, 6]
+        outline: [2, 6],
+        docFooter: { prev: false, next: false }
     }
 });
