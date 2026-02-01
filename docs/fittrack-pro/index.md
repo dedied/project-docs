@@ -29,10 +29,10 @@ FitTrack Pro uses an **Offline-First** approach with a "Cloud-Wins" conflict res
     - There is one specific exception to "Cloud-Wins" to prevent data loss when a user first signs up or syncs a device with existing data against an empty cloud account. In this scenario the user is asked whether which way they want to sync.
 
 ## Dependancies
-- [Database](./fittrack-pro/database/index.md)
-- [Hosting](./fittrack-pro/hosting/index.md)
-- [Payment](./fittrack-pro/payment/index.md)
-- [Testing](./fittrack-pro/testing/index.md)
+- [Database](./database/index.md)
+- [Hosting](./hosting/index.md)
+- [Payment](./payment/index.md)
+- [Testing](./testing/index.md)
 
 ## Useful links
 - [Fittrack Pro](https://fittrack-pro.app/)
