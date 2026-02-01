@@ -5,5 +5,5 @@
   * [Payment](./fittrack-pro/payment/index.md)
   * [Testing](./fittrack-pro/testing/index.md)
 
-<!-- DOCS_VERSION -->
+**Docs version:** ${window.$docsify.version}
 
