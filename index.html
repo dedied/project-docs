@@ -28,33 +28,11 @@
   }
 
   function mermaidLiveEditUrl(code) {
-    try {
-      // Ensure we're working with clean UTF-8 text
-      const cleanCode = code.trim();
-      
-      // Convert string to UTF-8 bytes first
-      const utf8Bytes = new TextEncoder().encode(cleanCode);
-      
-      // Compress the UTF-8 bytes
-      const compressed = pako.deflate(utf8Bytes, { level: 9 });
-      
-      // Encode to base64
-      const encoded = uint8ToBase64(compressed);
-      
-      // URL-safe base64 encoding
-      const urlSafe = encoded
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=/g, '');
-      
-      return `https://mermaid.live/edit#pako:${urlSafe}`;
-    } catch (error) {
-      console.error('Error generating Mermaid live link:', error);
-      // Fallback to simple base64 encoding if compression fails
-      const simpleEncoded = btoa(unescape(encodeURIComponent(code.trim())));
-      return `https://mermaid.live/edit#base64:${simpleEncoded}`;
-    }
-  }
+  // Simple base64 encoding without compression
+  const encoded = btoa(unescape(encodeURIComponent(code.trim())));
+  return `https://mermaid.live/edit#base64:${encoded}`;
+}
+
 
   window.$docsify = window.$docsify || {};
   window.$docsify.markdown = window.$docsify.markdown || {};
