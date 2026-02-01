@@ -91,37 +91,37 @@ sequenceDiagram
 flowchart TD
 
 %% --- Request + CORS ---
-A[Incoming Request] --> B{Is method OPTIONS?}
-B -->|Yes| C[Return CORS preflight response]
-B -->|No| D[Continue]
+A(Incoming Request) --> B{Is method OPTIONS?}
+B -->|Yes| C(Return CORS preflight response)
+B -->|No| D(Continue)
 
 %% --- User Client Setup ---
-D --> E[Create Supabase User Client\n(anon key + JWT)]
-E --> F[Get user via auth.getUser()]
+D --> E(Create Supabase User Client (anon key + JWT))
+E --> F(Get user via auth.getUser())
 F --> G{User found?}
-G -->|No| H[Throw error: User not found]
-G -->|Yes| I[Fetch profile: stripe_customer_id]
+G -->|No| H(Throw error: User not found)
+G -->|Yes| I(Fetch profile: stripe_customer_id)
 
 %% --- Admin Client Setup ---
-I --> J[Create Admin Supabase Client\n(service role key)]
+I --> J(Create Admin Supabase Client (service role key))
 
 %% --- Stripe Customer Handling ---
 J --> K{Has stripe_customer_id?}
-K -->|Yes| L[Use existing customerId]
-K -->|No| M[Create Stripe customer\nwith user.email]
-M --> N[Save new customerId\nto profiles table]
+K -->|Yes| L(Use existing customerId)
+K -->|No| M(Create Stripe customer with user.email)
+M --> N(Save new customerId to profiles table)
 
 %% --- Determine Origin ---
-L --> O[Determine origin header or SITE_URL]
+L --> O(Determine origin header or SITE_URL)
 N --> O
 
 %% --- Create Checkout Session ---
-O --> P[Create Stripe Checkout Session\npayment_method_types: card\nline_items: price ID\nmode: payment\nsuccess_url / cancel_url]
+O --> P(Create Stripe Checkout Session: payment_method_types card, line_items price ID, mode payment, success_url and cancel_url)
 
-P --> Q[Return JSON { url: session.url }]
+P --> Q(Return JSON with session.url)
 
 %% --- Error Handling ---
-H --> R[Return 500 JSON error]
+H --> R(Return 500 JSON error)
 
 
 ```
@@ -132,28 +132,28 @@ H --> R[Return 500 JSON error]
 flowchart TD
 
 %% --- Incoming Webhook ---
-A[Stripe sends webhook request] --> B[Extract Stripe-Signature header]
-B --> C[Read raw request body as text]
+A(Stripe sends webhook request) --> B(Extract Stripe-Signature header)
+B --> C(Read raw request body as text)
 
 %% --- Verify Signature ---
-C --> D[Construct Stripe event\nusing signing secret and crypto provider]
+C --> D(Construct Stripe event using signing secret and crypto provider)
 D --> E{Signature valid?}
-E -->|No| F[Return 400 Webhook Error]
-E -->|Yes| G[Process event]
+E -->|No| F(Return 400 Webhook Error)
+E -->|Yes| G(Process event)
 
 %% --- Event Handling ---
-G --> H{event.type == 'checkout.session.completed'?}
-H -->|No| I[Return 200 received: true]
-H -->|Yes| J[Extract session object]
+G --> H{event.type == "checkout.session.completed"?}
+H -->|No| I(Return 200 received: true)
+H -->|Yes| J(Extract session object)
 
-J --> K[Get customerId = session.customer]
+J --> K(Get customerId from session.customer)
 
 %% --- Update Database ---
-K --> L[Create Admin Supabase Client\n(service role key)]
-L --> M[Update profiles\nset is_premium = true\nwhere stripe_customer_id = customerId]
+K --> L(Create Admin Supabase Client using service role key)
+L --> M(Update profiles: set is_premium = true where stripe_customer_id matches customerId)
 
 %% --- Success Response ---
-M --> N[Return 200 received: true]
+M --> N(Return 200 received: true)
 
 
 ```
