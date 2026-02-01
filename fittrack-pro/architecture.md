@@ -36,23 +36,53 @@ sequenceDiagram
     participant C as Client App
     participant EF as Edge Function<br/>create-stripe-checkout
     participant ST as Stripe Checkout
-    participant WH as Stripe Webhook
+    participant WH as Stripe Webhook Endpoint
     participant SW as Supabase Edge Function<br/>stripe-webhook
     participant DB as Supabase Database
 
+    %% --- Checkout Session Creation ---
     U->>C: Click "Proceed with Payment"
-    C->>EF: POST /create-stripe-checkout
-    EF->>ST: Create Checkout Session
-    ST-->>EF: Session URL
+    C->>EF: POST /create-stripe-checkout<br/>with Authorization: Bearer JWT
+
+    EF->>EF: Create Supabase User Client (anon key + JWT)
+    EF->>EF: auth.getUser() → fetch authenticated user
+    EF->>DB: Fetch profile (stripe_customer_id)
+    DB-->>EF: Return profile
+
+    EF->>EF: Create Admin Supabase Client (service role)
+
+    alt No stripe_customer_id
+        EF->>ST: Create Stripe Customer (email)
+        ST-->>EF: Return customerId
+        EF->>DB: Update profile with stripe_customer_id
+    else Existing customer
+        EF->>EF: Use existing customerId
+    end
+
+    EF->>ST: Create Checkout Session<br/>line_items, success_url, cancel_url
+    ST-->>EF: Return session.url
+
     EF-->>C: Return redirect URL
-    C->>U: Redirect to Stripe Checkout
+    C->>U: Redirect user to Stripe Checkout
 
+    %% --- Payment + Webhook ---
     U->>ST: Completes payment
-    ST->>WH: Sends payment_intent.succeeded event
-    WH->>SW: POST /stripe-webhook
 
-    SW->>DB: Update user premium=true
-    SW-->>WH: 200 OK
+    ST->>WH: Send checkout.session.completed event
+
+    WH->>SW: POST /stripe-webhook<br/>with raw body + signature
+
+    SW->>SW: Verify Stripe signature
+    SW->>SW: Parse event
+
+    alt event.type == checkout.session.completed
+        SW->>DB: Update profiles<br/>set is_premium = true<br/>where stripe_customer_id = session.customer
+    else Other event types
+        SW->>SW: Ignore event
+    end
+
+    SW-->>WH: 200 {received: true}
+
 ```
 
 ## Edge Function: create-stripe-checkout
@@ -60,13 +90,39 @@ sequenceDiagram
 ```mermaid
 flowchart TD
 
-A[Client calls create-stripe-checkout] --> B[Validate user auth]
-B --> C{User authenticated?}
-C -->|No| D[Return 401 Unauthorized]
-C -->|Yes| E[Create Stripe Checkout Session]
+%% --- Request + CORS ---
+A[Incoming Request] --> B{Is method OPTIONS?}
+B -->|Yes| C[Return CORS preflight response]
+B -->|No| D[Continue]
 
-E --> F[Attach user ID as metadata]
-F --> G[Return session.url to client]
+%% --- User Client Setup ---
+D --> E[Create Supabase User Client<br/>(anon key + JWT)]
+E --> F[Get user via auth.getUser()]
+F --> G{User found?}
+G -->|No| H[Throw error: User not found]
+G -->|Yes| I[Fetch profile: stripe_customer_id]
+
+%% --- Admin Client Setup ---
+I --> J[Create Admin Supabase Client<br/>(service role key)]
+
+%% --- Stripe Customer Handling ---
+J --> K{Has stripe_customer_id?}
+K -->|Yes| L[Use existing customerId]
+K -->|No| M[Create Stripe customer<br/>with user.email]
+M --> N[Save new customerId<br/>to profiles table]
+
+%% --- Determine Origin ---
+L --> O[Determine origin header or SITE_URL]
+N --> O
+
+%% --- Create Checkout Session ---
+O --> P[Create Stripe Checkout Session<br/>payment_method_types: card<br/>line_items: price ID<br/>mode: payment<br/>success_url / cancel_url]
+
+P --> Q[Return JSON { url: session.url }]
+
+%% --- Error Handling ---
+H --> R[Return 500 JSON error]
+
 ```
 
 ## Edge Function: stripe-webhook
@@ -74,17 +130,30 @@ F --> G[Return session.url to client]
 ```mermaid
 flowchart TD
 
-A[Stripe sends webhook event] --> B[Verify Stripe signature]
-B --> C{Signature valid?}
-C -->|No| D[Return 400 Invalid Signature]
-C -->|Yes| E[Parse event type]
+%% --- Incoming Webhook ---
+A[Stripe sends webhook request] --> B[Extract Stripe-Signature header]
+B --> C[Read raw request body as text]
 
-E --> F{event.type == payment_intent.succeeded?}
-F -->|No| G[Ignore or log event]
-F -->|Yes| H[Extract user ID from metadata]
+%% --- Verify Signature ---
+C --> D[Construct Stripe event<br/>using signing secret + crypto provider]
+D --> E{Signature valid?}
+E -->|No| F[Return 400 Webhook Error]
+E -->|Yes| G[Process event]
 
-H --> I[Update Supabase DB: premium=true]
-I --> J[Return 200 OK]
+%% --- Event Handling ---
+G --> H{event.type == 'checkout.session.completed'?}
+H -->|No| I[Return 200 {received: true}]
+H -->|Yes| J[Extract session object]
+
+J --> K[Get customerId = session.customer]
+
+%% --- Update Database ---
+K --> L[Create Admin Supabase Client<br/>(service role key)]
+L --> M[Update profiles<br/>set is_premium = true<br/>where stripe_customer_id = customerId]
+
+%% --- Success Response ---
+M --> N[Return 200 {received: true}]
+
 ```
 
 
