@@ -18,69 +18,63 @@
     };
 
   </script>
-  <!-- Required dependency -->
-  <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
 
-  <script>
-  (function () {
-    function encodeMermaid(code) {
-      const compressed = pako.deflate(code, { level: 9 });
-      return btoa(String.fromCharCode.apply(null, compressed));
+
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+
+<script>
+(function () {
+  function uint8ToBase64(u8) {
+    let s = '';
+    for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]);
+    return btoa(s);
+  }
+
+  function mermaidLiveEditUrl(code) {
+    const compressed = pako.deflate(code, { level: 9 });
+    const encoded = uint8ToBase64(compressed);
+    return `https://mermaid.live/edit#pako:${encoded}`;
+  }
+
+  window.$docsify = window.$docsify || {};
+
+  // Ensure we don't clobber any existing markdown config
+  window.$docsify.markdown = window.$docsify.markdown || {};
+  window.$docsify.markdown.renderer = window.$docsify.markdown.renderer || {};
+
+  const previousCodeRenderer = window.$docsify.markdown.renderer.code;
+
+  window.$docsify.markdown.renderer.code = function (code, lang) {
+    const language = (lang || '').toLowerCase();
+
+    // Only intercept ```mermaid blocks
+    if (language === 'mermaid') {
+      const source = (code || '').trim();
+      const url = mermaidLiveEditUrl(source);
+
+      // Keep Mermaid-compatible container + add an edit link.
+      // Most Docsify Mermaid plugins will render diagrams from .mermaid blocks.
+      return (
+        '<div class="mermaid">' + source + '</div>' +
+        '<div class="mermaid-live-link" style="margin:0.5em 0;">' +
+          '<a href="' + url + '" target="_blank" rel="noopener">' +
+            'Edit in Mermaid Live' +
+          '</a>' +
+        '</div>'
+      );
     }
 
-    window.$docsify = window.$docsify || {};
-    window.$docsify.plugins = (window.$docsify.plugins || []).concat(function (hook) {
+    // Fall back to default renderer for all other code blocks
+    if (typeof previousCodeRenderer === 'function') {
+      return previousCodeRenderer.call(this, code, lang);
+    }
 
-      // 1. Preserve Mermaid source BEFORE rendering
-      hook.beforeEach(function (content) {
-        return content.replace(
-          /```mermaid([\s\S]*?)```/g,
-          function (_, code) {
-            const cleaned = code.trim();
+    // Minimal fallback if no previous renderer exists
+    return '<pre><code>' + code + '</code></pre>';
+  };
+})();
+</script>
 
-            // IMPORTANT:
-            // We cannot embed <script> directly inside a template literal.
-            // So we break the word "script" to avoid HTML parsing issues.
-            return (
-              '<scr' + 'ipt type="text/plain" class="mermaid-source">\n' +
-              cleaned +
-              '\n</scr' + 'ipt>\n\n' +
-              '```mermaid\n' +
-              cleaned +
-              '\n```'
-            );
-          }
-        );
-      });
-
-      // 2. Attach Mermaid Live links AFTER rendering
-      hook.doneEach(function () {
-        const diagrams = document.querySelectorAll('.mermaid');
-        const sources = document.querySelectorAll('.mermaid-source');
-
-        diagrams.forEach((diagram, index) => {
-          if (diagram.dataset.mermaidLinked) return;
-          if (!sources[index]) return;
-
-          const source = sources[index].textContent.trim();
-          const encoded = encodeMermaid(source);
-          const url = `https://mermaid.live/edit#pako:${encoded}`;
-
-          const link = document.createElement('div');
-          link.style.margin = '0.5em 0';
-          link.innerHTML = `
-            <a href="${url}" target="_blank" rel="noopener">
-              ✏️ Edit in Mermaid Live
-            </a>
-          `;
-
-          diagram.after(link);
-          diagram.dataset.mermaidLinked = 'true';
-        });
-      });
-    });
-  })();
-  </script>
 
 
   
