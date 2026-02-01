@@ -28,11 +28,14 @@ FitTrack Pro uses an **Offline-First** approach with a "Cloud-Wins" conflict res
 
 ## [Database](./fittrack-pro/database/index.md)
 
+## [Hosting](./fittrack-pro/hosting/index.md)
+
 ## [Payment](./fittrack-pro/payment/index.md)
 
-## [Hosting](./fittrack-pro/hosting/index.md)
+## [Testing](./fittrack-pro/testing/index.md)
+
+
 
 ## 🤖 Created with Google AI Studio, GitHub, GitHub Pages and Supabase
 
 The coding for this project was entirely done using Google AI Studio.
-See the end result at the [GitHub page](https://dedied.github.io/fittrack-pro/).
