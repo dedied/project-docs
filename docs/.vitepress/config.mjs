@@ -1,8 +1,6 @@
 import { defineConfig } from 'vitepress';
-import { withMermaid } from 'vitepress-plugin-mermaid'
 
-export default withMermaid(
-  defineConfig({
+export default defineConfig({
     title: 'FitTrack Pro Docs',
     description: 'Architecture and product documentation',
     themeConfig: {
@@ -17,5 +15,4 @@ export default withMermaid(
             ]
         }
     }
-  })
-);
+});
