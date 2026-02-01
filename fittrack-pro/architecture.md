@@ -213,7 +213,7 @@ graph LR
     A["Developer"] -->|Push Code| B["GitHub Repo: main"]
     B -->|Webhook| C["Vercel"]
     C -->|Build| D["npm install<br/>npm run build"]
-    F -->|Serve| G["Vercel testing site"]
+    D -->|Serve| E["Vercel testing site"]
 ```
 
 ### Production
@@ -223,9 +223,9 @@ graph LR
     A["Developer"] -->|Push Code| B["GitHub Repo: production"]
     B -->|Webhook| C["Vercel"]
     C -->|Build| D["npm install<br/>npm run build"]
-    F -->|Serve| G["fittrack-pro.app"]
+    D -->|Serve| E["fittrack-pro.app"]
 
-    style G fill:#4CAF50,color:#fff
+    style E fill:#4CAF50,color:#fff
 ```
 
 ---
