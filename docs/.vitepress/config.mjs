@@ -1,21 +1,21 @@
 import { defineConfig } from 'vitepress';
+import { withMermaid } from 'vitepress-plugin-mermaid'
 
-export default defineConfig({
+export default withMermaid(
+  defineConfig({
     title: 'FitTrack Pro Docs',
     description: 'Architecture and product documentation',
-    markdown: { mermaid: true },
     themeConfig: {
         sidebar: {
-            '/fittrack-pro/': [
+            '/': [
             {
                 text: 'FitTrack Pro',
                 items: [
-                { text: 'Overview', link: '/fittrack-pro/' },
-                { text: 'Architecture', link: '/fittrack-pro/architecture' }
+                { text: 'Architecture', link: '/architecture' }
                 ]
             }
             ]
         }
     }
-
-});
+  })
+);
