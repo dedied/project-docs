@@ -14,20 +14,7 @@
       name: 'FitTrack Pro',
       loadSidebar: true,
       cache: false,
-      version: '1.0.4',
-      plugins: [
-        function (hook) {
-          hook.beforeEach(function (content) {
-            if (content.includes('<!-- DOCS_VERSION -->')) {
-              return content.replace(
-                '<!-- DOCS_VERSION -->',
-                `**Docs version:** ${window.$docsify.version}`
-              )
-            }
-            return content
-          })
-        }
-      ]
+      version: '1.0.5'
     }
   </script>
 
