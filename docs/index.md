@@ -1,2 +1,4 @@
-## Fit Track Pro
-- [Docs](./fittrack-pro/index.md)
+---
+layout: home
+redirect: /fittrack-pro/
+---
