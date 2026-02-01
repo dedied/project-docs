@@ -91,38 +91,37 @@ sequenceDiagram
 flowchart TD
 
 %% --- Request + CORS ---
-A(Incoming Request) --> B{Is method OPTIONS?}
-B -->|Yes| C(Return CORS preflight response)
-B -->|No| D(Continue)
+A["Incoming Request"] --> B{"Is method OPTIONS?"}
+B -->|Yes| C["Return CORS preflight response"]
+B -->|No| D["Continue"]
 
 %% --- User Client Setup ---
-D --> E(Create Supabase User Client (anon key + JWT))
-E --> F(Get user via auth.getUser())
-F --> G{User found?}
-G -->|No| H(Throw error: User not found)
-G -->|Yes| I(Fetch profile: stripe_customer_id)
+D --> E["Create Supabase User Client (anon key + JWT)"]
+E --> F["Get user via auth.getUser()"]
+F --> G{"User found?"}
+G -->|No| H["Throw error: User not found"]
+G -->|Yes| I["Fetch profile: stripe_customer_id"]
 
 %% --- Admin Client Setup ---
-I --> J(Create Admin Supabase Client (service role key))
+I --> J["Create Admin Supabase Client (service role key)"]
 
 %% --- Stripe Customer Handling ---
-J --> K{Has stripe_customer_id?}
-K -->|Yes| L(Use existing customerId)
-K -->|No| M(Create Stripe customer with user.email)
-M --> N(Save new customerId to profiles table)
+J --> K{"Has stripe_customer_id?"}
+K -->|Yes| L["Use existing customerId"]
+K -->|No| M["Create Stripe customer with user.email"]
+M --> N["Save new customerId to profiles table"]
 
 %% --- Determine Origin ---
-L --> O(Determine origin header or SITE_URL)
+L --> O["Determine origin header or SITE_URL"]
 N --> O
 
 %% --- Create Checkout Session ---
-O --> P(Create Stripe Checkout Session: payment_method_types card, line_items price ID, mode payment, success_url and cancel_url)
+O --> P["Create Stripe Checkout Session: payment_method_types card, line_items price ID, mode payment, success_url and cancel_url"]
 
-P --> Q(Return JSON with session.url)
+P --> Q["Return JSON with session.url"]
 
 %% --- Error Handling ---
-H --> R(Return 500 JSON error)
-
+H --> R["Return 500 JSON error"]
 
 ```
 
