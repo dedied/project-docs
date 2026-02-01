@@ -1,51 +1,100 @@
 # FitTrack Pro - System Architecture Diagram
 
-## Setup & Infrastructure Overview
+## User sign up and premium check flow
 
 ```mermaid
-graph TD
-    A["📱 FitTrack Pro App<br/>React + Vite + Tailwind CSS"] -->|Reads/Writes| B["💾 Local Storage<br/>Offline-First PWA"]
-    
-    A -->|When Online| C["☁️ Vercel<br/>Hosting & Deployment"]
-    C -->|Serves| A
-    
-    D["🔐 GitHub<br/>Version Control"] -->|Push to| C
-    D -->|Triggers| E["⚙️ Vercel Build<br/>npm run build → dist/"]
-    E -->|Deploys| C
-    
-    A -->|Auth & Sync| F["🔑 Supabase<br/>Backend & Database"]
-    F -->|Profiles Table| G["👤 User Profiles<br/>Premium Status<br/>Stripe Customer ID"]
-    F -->|Workouts Table| H["🏋️ Workout Logs<br/>Cloud Storage"]
-    
-    H -->|Cloud-Wins<br/>Conflict Resolution| B
-    B -->|Syncs with| H
-    
-    A -->|Payment Intent| I["💳 Stripe<br/>Premium Payments"]
-    I -->|Updates| G
-    
-    F -->|Edge Functions| J["⚡ Supabase Edge Functions<br/>create-stripe-checkout<br/>stripe-webhook"]
-    J -->|Communicates with| I
-    
-    A -->|Testing| K["🧪 Checkly<br/>Cloud Tests"]
-    K -->|Monitors| C
-    
-    L["🌐 Domain<br/>.app"]
-    L -->|Points to| C
-    
-    M["🔒 Security<br/>RLS Policies<br/>PIN Lock<br/>Biometric Auth"] -->|Protects| B
-    M -->|Protects| F
-    
-    style A fill:#4CAF50,color:#fff
-    style B fill:#2196F3,color:#fff
-    style C fill:#FF6D00,color:#fff
-    style F fill:#9C27B0,color:#fff
-    style G fill:#9C27B0,color:#fff
-    style H fill:#9C27B0,color:#fff
-    style I fill:#FBC02D,color:#000
-    style J fill:#9C27B0,color:#fff
-    style K fill:#00BCD4,color:#fff
-    style M fill:#F44336,color:#fff
+flowchart TD
+
+A[User enters email for Cloud Sync] --> B[Supabase sends OTP code]
+B --> C[User enters code and clicks Verify]
+
+C --> D{Is OTP valid?}
+D -->|No| E[Show error: invalid code]
+D -->|Yes| F[Check if user exists in DB]
+
+F --> G{User exists?}
+G -->|No| H[Create user record in Supabase DB]
+G -->|Yes| I[Load user record]
+
+H --> J[Check premium status]
+I --> J[Check premium status]
+
+J --> K{Is user premium?}
+K -->|Yes| L[Grant access to Cloud Sync]
+K -->|No| M[Show Premium Required dialog]
+
+M --> N[User clicks Proceed with Payment]
+N --> O[Call Edge Function: create-stripe-checkout]
+O --> P[Redirect user to Stripe Checkout]
 ```
+
+## Stripe Checkout + Webhook Confirmation
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant C as Client App
+    participant EF as Edge Function<br/>create-stripe-checkout
+    participant ST as Stripe Checkout
+    participant WH as Stripe Webhook
+    participant SW as Supabase Edge Function<br/>stripe-webhook
+    participant DB as Supabase Database
+
+    U->>C: Click "Proceed with Payment"
+    C->>EF: POST /create-stripe-checkout
+    EF->>ST: Create Checkout Session
+    ST-->>EF: Session URL
+    EF-->>C: Return redirect URL
+    C->>U: Redirect to Stripe Checkout
+
+    U->>ST: Completes payment
+    ST->>WH: Sends payment_intent.succeeded event
+    WH->>SW: POST /stripe-webhook
+
+    SW->>DB: Update user premium=true
+    SW-->>WH: 200 OK
+```
+
+## Edge Function: create-stripe-checkout
+
+```mermaid
+flowchart TD
+
+A[Client calls create-stripe-checkout] --> B[Validate user auth]
+B --> C{User authenticated?}
+C -->|No| D[Return 401 Unauthorized]
+C -->|Yes| E[Create Stripe Checkout Session]
+
+E --> F[Attach user ID as metadata]
+F --> G[Return session.url to client]
+```
+
+## Edge Function: stripe-webhook
+
+```mermaid
+flowchart TD
+
+A[Stripe sends webhook event] --> B[Verify Stripe signature]
+B --> C{Signature valid?}
+C -->|No| D[Return 400 Invalid Signature]
+C -->|Yes| E[Parse event type]
+
+E --> F{event.type == payment_intent.succeeded?}
+F -->|No| G[Ignore or log event]
+F -->|Yes| H[Extract user ID from metadata]
+
+H --> I[Update Supabase DB: premium=true]
+I --> J[Return 200 OK]
+```
+
+
+
+
+
+
+
+
+
 
 ## Data Flow: Sync Strategy (Premium)
 

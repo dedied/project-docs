@@ -191,6 +191,7 @@ Before running the application, you must configure your Supabase credentials in 
 
 ## Edge Functions
 - create-stripe-checkout
+
 ```
 // supabase/functions/create-stripe-checkout/index.ts
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
@@ -272,7 +273,9 @@ serve(async (req) => {
   }
 });
 ```
+
 - stripe-webhook
+
 ```
 // supabase/functions/stripe-webhook/index.ts
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
@@ -317,6 +320,7 @@ serve(async (req) => {
   }
 });
 ```
+
 - Edge function secrets needed:
   - the following should have been created automatically for you by the act of creating the functions in the previous step:
       - `SUPABASE_URL`
