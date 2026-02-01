@@ -16,29 +16,47 @@
       cache: false,
       mermaid: true
     };
-
   </script>
-
 
 <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
 
 <script>
 (function () {
+  // Fixed encoding function - the key issue was here
   function uint8ToBase64(u8) {
-    let s = '';
-    for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]);
-    return btoa(s);
+    return btoa(String.fromCharCode.apply(null, u8));
   }
 
   function mermaidLiveEditUrl(code) {
-    const compressed = pako.deflate(code, { level: 9 });
-    const encoded = uint8ToBase64(compressed);
-    return `https://mermaid.live/edit#pako:${encoded}`;
+    try {
+      // Ensure we're working with clean UTF-8 text
+      const cleanCode = code.trim();
+      
+      // Convert string to UTF-8 bytes first
+      const utf8Bytes = new TextEncoder().encode(cleanCode);
+      
+      // Compress the UTF-8 bytes
+      const compressed = pako.deflate(utf8Bytes, { level: 9 });
+      
+      // Encode to base64
+      const encoded = uint8ToBase64(compressed);
+      
+      // URL-safe base64 encoding
+      const urlSafe = encoded
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+      
+      return `https://mermaid.live/edit#pako:${urlSafe}`;
+    } catch (error) {
+      console.error('Error generating Mermaid live link:', error);
+      // Fallback to simple base64 encoding if compression fails
+      const simpleEncoded = btoa(unescape(encodeURIComponent(code.trim())));
+      return `https://mermaid.live/edit#base64:${simpleEncoded}`;
+    }
   }
 
   window.$docsify = window.$docsify || {};
-
-  // Ensure we don't clobber any existing markdown config
   window.$docsify.markdown = window.$docsify.markdown || {};
   window.$docsify.markdown.renderer = window.$docsify.markdown.renderer || {};
 
@@ -47,43 +65,45 @@
   window.$docsify.markdown.renderer.code = function (code, lang) {
     const language = (lang || '').toLowerCase();
 
-    // Only intercept ```mermaid blocks
     if (language === 'mermaid') {
       const source = (code || '').trim();
+      
+      // Skip empty diagrams
+      if (!source) {
+        return '<div class="mermaid-error">Empty Mermaid diagram</div>';
+      }
+
       const url = mermaidLiveEditUrl(source);
 
-      // Keep Mermaid-compatible container + add an edit link.
-      // Most Docsify Mermaid plugins will render diagrams from .mermaid blocks.
       return (
         '<div class="mermaid">' + source + '</div>' +
-        '<div class="mermaid-live-link" style="margin:0.5em 0;">' +
-          '<a href="' + url + '" target="_blank" rel="noopener">' +
-            'Edit in Mermaid Live' +
+        '<div class="mermaid-live-link" style="margin: 0.5em 0; text-align: right;">' +
+          '<a href="' + url + '" target="_blank" rel="noopener" style="font-size: 0.85em; color: #666; text-decoration: none; border: 1px solid #ddd; padding: 2px 8px; border-radius: 3px;">' +
+            '📝 Edit in Mermaid Live' +
           '</a>' +
         '</div>'
       );
     }
 
-    // Fall back to default renderer for all other code blocks
     if (typeof previousCodeRenderer === 'function') {
       return previousCodeRenderer.call(this, code, lang);
     }
 
-    // Minimal fallback if no previous renderer exists
     return '<pre><code>' + code + '</code></pre>';
   };
 })();
 </script>
 
+<script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docsify-mermaid/dist/docsify-mermaid.min.js"></script>
 
-
-  
-  <script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/docsify-mermaid/dist/docsify-mermaid.min.js"></script>
-
-  <script>
-    mermaid.initialize({ startOnLoad: true });
-  </script>
+<script>
+  mermaid.initialize({ 
+    startOnLoad: true,
+    theme: 'default',
+    securityLevel: 'loose'
+  });
+</script>
 </body>
 </html>
