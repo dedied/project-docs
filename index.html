@@ -16,65 +16,56 @@
       cache: false,
       mermaid: true
     };
+    window.$docsify = window.$docsify || {};
   </script>
 
-<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
-
-<script>
-(function () {
-  // Fixed encoding function - the key issue was here
-  function uint8ToBase64(u8) {
-    return btoa(String.fromCharCode.apply(null, u8));
-  }
-
-  function mermaidLiveEditUrl(code) {
-  // Simple base64 encoding without compression
-  const encoded = btoa(unescape(encodeURIComponent(code.trim())));
-  return `https://mermaid.live/edit#base64:${encoded}`;
-}
-
-
-  window.$docsify = window.$docsify || {};
-  window.$docsify.markdown = window.$docsify.markdown || {};
-  window.$docsify.markdown.renderer = window.$docsify.markdown.renderer || {};
-
-  const previousCodeRenderer = window.$docsify.markdown.renderer.code;
-
-  window.$docsify.markdown.renderer.code = function (code, lang) {
-    const language = (lang || '').toLowerCase();
-
-    if (language === 'mermaid') {
-      const source = (code || '').trim();
-      
-      // Skip empty diagrams
-      if (!source) {
-        return '<div class="mermaid-error">Empty Mermaid diagram</div>';
-      }
-
-      const url = mermaidLiveEditUrl(source);
-
-      return (
-        '<div class="mermaid">' + source + '</div>' +
-        '<div class="mermaid-live-link" style="margin: 0.5em 0; text-align: right;">' +
-          '<a href="' + url + '" target="_blank" rel="noopener" style="font-size: 0.85em; color: #666; text-decoration: none; border: 1px solid #ddd; padding: 2px 8px; border-radius: 3px;">' +
-            '📝 Edit in Mermaid Live' +
-          '</a>' +
-        '</div>'
-      );
-    }
-
-    if (typeof previousCodeRenderer === 'function') {
-      return previousCodeRenderer.call(this, code, lang);
-    }
-
-    return '<pre><code>' + code + '</code></pre>';
-  };
-})();
-</script>
 
 <script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docsify-mermaid/dist/docsify-mermaid.min.js"></script>
+
+<script>
+(function () {
+  function addCopyButtons() {
+    document.querySelectorAll('pre[data-lang="mermaid"]').forEach(pre => {
+      if (pre.dataset.copyAttached) return;
+
+      const button = document.createElement('button');
+      button.textContent = 'Copy diagram';
+      button.style.cssText = `
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        font-size: 12px;
+        padding: 4px 8px;
+        cursor: pointer;
+      `;
+
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'relative';
+
+      pre.parentNode.insertBefore(wrapper, pre);
+      wrapper.appendChild(pre);
+      wrapper.appendChild(button);
+
+      button.addEventListener('click', () => {
+        const code = pre.querySelector('code')?.innerText || '';
+        navigator.clipboard.writeText(code);
+        button.textContent = 'Copied!';
+        setTimeout(() => (button.textContent = 'Copy diagram'), 1200);
+      });
+
+      pre.dataset.copyAttached = 'true';
+    });
+  }
+
+  window.$docsify = window.$docsify || {};
+  window.$docsify.plugins = (window.$docsify.plugins || []).concat(function (hook) {
+    hook.doneEach(addCopyButtons);
+  });
+})();
+</script>
+
 
 <script>
   mermaid.initialize({ 
