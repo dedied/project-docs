@@ -218,19 +218,16 @@ graph LR
 
 ### Staging
 - via the `staging` git branch
-- this gives you the chance to ensure your application is correctly connected to the **production Stripe environment**, by updating the following variables in the client-side `App.tsx` file **before** promoting it to `production`:
-
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-
-These values must point to your production Supabase project so payments and authentication are handled by the correct instance.
+- this gives you the chance to ensure your application is correctly configured for production by updating the following variables in the client-side `App.tsx` file. These values must point to your production Supabase project so payments and authentication are handled by the correct instance:
+  - `SUPABASE_URL`
+  - `SUPABASE_ANON_KEY`
 
 ```mermaid
 graph LR
     A["Developer"] -->|Push Code| B["GitHub Repo: main"]
     B -->|Webhook| C["Vercel"]
     C -->|Build| D["npm install<br/>npm run build"]
-    D -->|Serve| E["Vercel testing site"]
+    D -->|Serve| E["Vercel staging site"]
 ```
 
 ### Production

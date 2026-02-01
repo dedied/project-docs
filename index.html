@@ -15,14 +15,12 @@
       loadSidebar: true,
       cache: false,
       mermaid: true
-    }
+    };
+    (function () { function encodeMermaid(code) { const compressed = pako.deflate(code, { level: 9 }); return btoa( String.fromCharCode.apply(null, compressed) ); } window.$docsify = window.$docsify || {}; window.$docsify.plugins = (window.$docsify.plugins || []).concat(function (hook) { hook.doneEach(function () { document.querySelectorAll('pre[data-lang="mermaid"]').forEach(pre => { if (pre.dataset.mermaidLinked) return; const code = pre.textContent.trim(); const encoded = encodeMermaid(code); const url = `https://mermaid.live/edit#pako:${encoded}`; const link = document.createElement('div'); link.style.margin = '0.5em 0'; link.innerHTML = ` <a href="${url}" target="_blank" rel="noopener"> ✏️ Edit in Mermaid Live </a> `; pre.after(link); pre.dataset.mermaidLinked = 'true'; }); }); }); })();
   </script>
-
+  <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script>
-  <!-- Mermaid -->
   <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-
-  <!-- Docsify Mermaid Plugin -->
   <script src="https://cdn.jsdelivr.net/npm/docsify-mermaid/dist/docsify-mermaid.min.js"></script>
 
   <script>
