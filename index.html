@@ -16,16 +16,7 @@
       cache: false,
       mermaid: true
     };
-    (function () {
-  function encodeMermaid(code) {
-    const compressed = pako.deflate(code, { level: 9 });
-    return btoa(
-      String.fromCharCode.apply(null, compressed)
-    );
-  }
 
-  window.$docsify = window.$docsify || {};
-  
   </script>
 
   <script>
