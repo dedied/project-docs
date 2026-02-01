@@ -2,13 +2,13 @@
 
 Follow these steps to enable premium subscriptions via Stripe.
 
-## 1. Stripe Setup
+## Stripe Setup
 - Go to your [Stripe Dashboard](https://dashboard.stripe.com/).
 - Create a new product (e.g., "FitTrack Pro Premium").
 - Add a price to it (e.g., $19.99, one-time payment). Note the **Price ID** (e.g., `price_...`).
 - Go to **Developers > API keys** and copy your **Secret key**.
 
-## 2. Supabase Environment Variables
+## Supabase Environment Variables
 - In your Supabase project, go to **Project Settings > Edge Functions**.
 - Add the following secrets. The Edge Functions require these to authenticate users and interact with Stripe.
   - `SUPABASE_URL`: Your project's Supabase URL.
@@ -17,7 +17,7 @@ Follow these steps to enable premium subscriptions via Stripe.
   - `STRIPE_PRICE_ID`: The Price ID from the product you created (`price_...`).
   - `SITE_URL`: The URL where your app is deployed (e.g., `https://your-github-username.github.io/fittrack-pro/`).
 
-## 3. Create Supabase Edge Functions
+## Create Supabase Edge Functions
 - Create two new Edge Functions in your Supabase project.
 
 **Function 1: `create-stripe-checkout`**
@@ -155,10 +155,13 @@ serve(async (req) => {
   }
 });
 ```
-### 4. Deploy Functions & Webhook
+## Deploy Functions & Webhook
 - Deploy both functions using the Supabase CLI: `supabase functions deploy create-stripe-checkout` and `supabase functions deploy stripe-webhook`.
 - Go to **Stripe Dashboard > Developers > Webhooks**.
 - Create a new webhook endpoint. The URL is your Supabase webhook function URL.
 - Select the event `checkout.session.completed`.
 - Reveal and copy the **Signing secret** and add it as a new secret in Supabase Edge Functions: `STRIPE_WEBHOOK_SIGNING_SECRET`.
+
+## Useful Links
+- [Stripe fake credit card](https://docs.stripe.com/testing?testing-method=card-numbers#visa)
 

@@ -1,4 +1,6 @@
-# Database & Auth Setup (Supabase)
+# Database & Auth Setup
+
+We're using [Supabase](https://supabase.com/).
 
 To enable user accounts, set up a Supabase project and run the following SQL query in the **SQL Editor** to create the necessary tables and security policies.
 
@@ -185,3 +187,144 @@ Before running the application, you must configure your Supabase credentials in 
     ```
 3.  Ensure the `SUPABASE_URL` matches your project's URL.
 4.  Replace the placeholder `SUPABASE_ANON_KEY` with your project's **anon (public) key**. You can find this in your Supabase Dashboard under **Project Settings > API > Project API Keys**. It typically starts with `sb_publishable_...`.
+
+
+## Edge Functions
+- create-stripe-checkout
+```
+// supabase/functions/create-stripe-checkout/index.ts
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import Stripe from 'https://esm.sh/stripe@11.1.0?target=deno';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const stripe = Stripe(Deno.env.get('STRIPE_SECRET_KEY'), {
+  httpClient: Stripe.createFetchHttpClient(),
+});
+
+serve(async (req) => {
+  // 1. Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    // 2. USER CLIENT (anon key + JWT)
+    const userSupabase = createClient(
+      Deno.env.get('SUPABASE_URL'),
+      Deno.env.get('SUPABASE_ANON_KEY'),
+      { global: { headers: { Authorization: req.headers.get('Authorization') } } }
+    );
+
+    const { data: { user } } = await userSupabase.auth.getUser();
+    if (!user) throw new Error('User not found');
+
+    const { data: profile } = await userSupabase
+      .from('profiles')
+      .select('stripe_customer_id')
+      .eq('id', user.id)
+      .single();
+
+    let customerId = profile?.stripe_customer_id;
+
+    // 3. ADMIN CLIENT (service role key)
+    const adminSupabase = createClient(
+      Deno.env.get('SUPABASE_URL'),
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    );
+
+    // 4. Create Stripe customer if needed
+    if (!customerId) {
+      const customer = await stripe.customers.create({ email: user.email });
+      customerId = customer.id;
+
+      await adminSupabase
+        .from('profiles')
+        .update({ stripe_customer_id: customerId })
+        .eq('id', user.id);
+    }
+    const origin = req.headers.get("origin") ?? Deno.env.get("SITE_URL");
+
+
+    // 5. Create Checkout Session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      customer: customerId,
+      line_items: [{ price: Deno.env.get('STRIPE_PRICE_ID'), quantity: 1 }],
+      mode: 'payment',
+      success_url: `${origin}?payment_success=true`,
+      cancel_url: `${origin}?payment_canceled=true`,
+    });
+
+    return new Response(JSON.stringify({ url: session.url }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
+```
+- stripe-webhook
+```
+// supabase/functions/stripe-webhook/index.ts
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import Stripe from 'https://esm.sh/stripe@11.1.0?target=deno';
+
+const stripe = Stripe(Deno.env.get('STRIPE_SECRET_KEY'), {
+  httpClient: Stripe.createFetchHttpClient(),
+});
+const cryptoProvider = Stripe.createSubtleCryptoProvider();
+
+serve(async (req) => {
+  const signature = req.headers.get('Stripe-Signature');
+  const body = await req.text();
+  
+  try {
+    const event = await stripe.webhooks.constructEventAsync(
+      body,
+      signature,
+      Deno.env.get('STRIPE_WEBHOOK_SIGNING_SECRET'),
+      undefined,
+      cryptoProvider
+    );
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const customerId = session.customer;
+
+      const adminSupabase = createClient(
+        Deno.env.get('SUPABASE_URL'),
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+      );
+      
+      await adminSupabase.from('profiles')
+        .update({ is_premium: true })
+        .eq('stripe_customer_id', customerId);
+    }
+    
+    return new Response(JSON.stringify({ received: true }), { status: 200 });
+  } catch (err) {
+    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+  }
+});
+```
+- Edge function secrets needed:
+  - the following should have been created automatically for you by the act of creating the functions in the previous step:
+      - `SUPABASE_URL`
+      - `SUPABASE_ANON_KEY`
+      - `SUPABASE_SERVICE_ROLE_KEY`
+      - `SUPABASE_DB_URL`
+  - these need to be manually created:
+    - `STRIPE_SECRET_KEY`
+    - `STRIPE_PRICE_ID`
+    - `STRIPE_WEBHOOK_SIGNING_SECRET`
+    - `SITE_URL`

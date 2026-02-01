@@ -1,33 +1,11 @@
-# FitTrack Pro — Hosting & Deployment on Vercel
+# Hosting & Deployment
 
-This document explains how FitTrack Pro is deployed using **Vercel**, how a Vite + React project is configured correctly, how a blank-screen deployment issue was resolved, and how Stripe and Supabase are integrated in a cloud-only workflow.
+This document explains how FitTrack Pro is deployed using [Vercel](https://vercel.com/), how a Vite + React project is configured correctly, how a blank-screen deployment issue was resolved, and how Stripe and Supabase are integrated in a cloud-only workflow.
 
 This setup assumes development happens entirely through **AI Studio → GitHub → Vercel**, without running a local development environment.
 
----
 
-## 1. Migration from GitHub Pages to Vercel
-
-FitTrack Pro was originally deployed using GitHub Pages with a GitHub Actions workflow that:
-
-- Installed dependencies
-- Built the Vite project
-- Uploaded the `dist/` folder
-- Deployed to GitHub Pages
-
-When migrating to Vercel:
-
-- The GitHub Pages workflow is no longer required
-- Vercel automatically builds and deploys on every push
-- No GitHub Actions are needed
-
-The following file can be safely removed:
-
-    .github/workflows/deploy.yml
-
----
-
-## 2. Vercel Build Settings (React + Vite)
+## 1. Vercel Build Settings (React + Vite)
 
 Vercel must be configured with the correct build settings.
 
@@ -43,7 +21,7 @@ These settings ensure Vercel builds the Vite project correctly and deploys the g
 
 ---
 
-## 3. SPA Routing Configuration (vercel.json)
+## 2. SPA Routing Configuration (vercel.json)
 
 React Router (and any Vite SPA) requires a fallback so that all routes serve `index.html`.
 
@@ -65,7 +43,7 @@ Without this rewrite rule, refreshing a route or opening a deep link can result 
 
 ---
 
-## 4. Resolving the Blank Screen Issue
+## 3. Resolving the Blank Screen Issue
 
 The first Vercel deployment built successfully but rendered a blank screen.
 
@@ -83,18 +61,8 @@ However, Vercel serves assets from the root:
 
 Removing the `base` property resolved the issue.
 
-Correct Vite configuration:
 
-    import { defineConfig } from 'vite'
-    import react from '@vitejs/plugin-react'
-
-    export default defineConfig({
-      plugins: [react()],
-    })
-
----
-
-## 5. Domain Configuration
+## 4. Domain Configuration
 
 FitTrack Pro uses a `.app` domain, which provides:
 
@@ -108,9 +76,16 @@ Example domain:
 
 Vercel manages DNS, SSL certificates, and deployment automatically.
 
----
 
-## 6. Stripe Checkout Redirect URLs
+
+
+
+
+
+
+
+
+## 5. Stripe Checkout Redirect URLs
 
 Stripe Checkout redirect URLs are **not** configured in the Stripe dashboard.
 They are defined in the Supabase Edge Function that creates the Checkout Session.
@@ -155,28 +130,7 @@ This endpoint:
 
 ---
 
-## 8. Supabase Environment Variables
-
-The following environment variables must be configured in:
-
-**Supabase → Project Settings → Functions → Environment Variables**
-
-    SUPABASE_URL=...
-    SUPABASE_ANON_KEY=...
-    SUPABASE_SERVICE_ROLE_KEY=...
-    STRIPE_SECRET_KEY=...
-    STRIPE_PRICE_ID=...
-    STRIPE_WEBHOOK_SIGNING_SECRET=...
-    SITE_URL=https://fittrack-pro.app
-
-These variables support:
-
-- Authenticated checkout creation
-- Stripe customer management
-- Webhook verification
-- Premium entitlement updates
-- Redirect URL control
-
+#
 ---
 
 ## 9. Deployment Workflow
