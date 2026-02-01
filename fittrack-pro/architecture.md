@@ -132,28 +132,28 @@ H --> R(Return 500 JSON error)
 flowchart TD
 
 %% --- Incoming Webhook ---
-A(Stripe sends webhook request) --> B(Extract Stripe-Signature header)
-B --> C(Read raw request body as text)
+A["Stripe sends webhook request"] --> B["Extract Stripe-Signature header"]
+B --> C["Read raw request body as text"]
 
 %% --- Verify Signature ---
-C --> D(Construct Stripe event using signing secret and crypto provider)
-D --> E{Signature valid?}
-E -->|No| F(Return 400 Webhook Error)
-E -->|Yes| G(Process event)
+C --> D["Construct Stripe event using signing secret and crypto provider"]
+D --> E{"Signature valid?"}
+E -->|No| F["Return 400 Webhook Error"]
+E -->|Yes| G["Process event"]
 
 %% --- Event Handling ---
-G --> H{event.type == "checkout.session.completed"?}
-H -->|No| I(Return 200 received: true)
-H -->|Yes| J(Extract session object)
+G --> H{"event.type == 'checkout.session.completed'?"}
+H -->|No| I["Return 200 received: true"]
+H -->|Yes| J["Extract session object"]
 
-J --> K(Get customerId from session.customer)
+J --> K["Get customerId from session.customer"]
 
 %% --- Update Database ---
-K --> L(Create Admin Supabase Client using service role key)
-L --> M(Update profiles: set is_premium = true where stripe_customer_id matches customerId)
+K --> L["Create Admin Supabase Client using service role key"]
+L --> M["Update profiles: set is_premium = true where stripe_customer_id matches customerId"]
 
 %% --- Success Response ---
-M --> N(Return 200 received: true)
+M --> N["Return 200 received: true"]
 
 
 ```
