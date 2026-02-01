@@ -158,14 +158,6 @@ M --> N["Return 200 received: true"]
 ```
 
 
-
-
-
-
-
-
-
-
 ## Data Flow: Sync Strategy (Premium)
 
 ```mermaid
@@ -193,26 +185,6 @@ sequenceDiagram
     App->>LocalDB: Mark synced
 ```
 
-## Payment Flow
-
-```mermaid
-graph LR
-    A["User Clicks<br/>Upgrade to Premium"] -->|Triggers| B["create-stripe-checkout<br/>Edge Function"]
-    B -->|Authenticate| C["Supabase Auth"]
-    C -->|Get/Create| D["Stripe Customer ID"]
-    D -->|From| E["User Profile"]
-    B -->|Create Session| F["Stripe Checkout"]
-    F -->|Redirect| G["Payment Page"]
-    G -->|Success| H["Update Profile<br/>is_premium = true"]
-    H -->|Store| E
-    
-    style A fill:#4CAF50,color:#fff
-    style B fill:#9C27B0,color:#fff
-    style C fill:#9C27B0,color:#fff
-    style F fill:#FBC02D,color:#000
-    style G fill:#FBC02D,color:#000
-    style H fill:#2196F3,color:#fff
-```
 
 ## Security & Authentication
 
@@ -234,17 +206,25 @@ graph TD
 
 ## Deployment Pipeline
 
+### Test
+
 ```mermaid
 graph LR
-    A["Developer"] -->|Push Code| B["GitHub Repo"]
+    A["Developer"] -->|Push Code| B["GitHub Repo: main"]
     B -->|Webhook| C["Vercel"]
     C -->|Build| D["npm install<br/>npm run build"]
-    D -->|Output| E["dist/ folder"]
-    E -->|Deploy| F["Vercel CDN"]
+    F -->|Serve| G["Vercel testing site"]
+```
+
+### Production
+
+```mermaid
+graph LR
+    A["Developer"] -->|Push Code| B["GitHub Repo: production"]
+    B -->|Webhook| C["Vercel"]
+    C -->|Build| D["npm install<br/>npm run build"]
     F -->|Serve| G["fittrack-pro.app"]
-    G -->|SPA Routing| H["vercel.json<br/>Rewrite Rules"]
-    
-    style C fill:#FF6D00,color:#fff
+
     style G fill:#4CAF50,color:#fff
 ```
 
