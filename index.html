@@ -18,63 +18,72 @@
     };
 
   </script>
+  <!-- Required dependency -->
+  <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
 
   <script>
-    (function () {
-      const mermaidSources = [];
+  (function () {
+    function encodeMermaid(code) {
+      const compressed = pako.deflate(code, { level: 9 });
+      return btoa(String.fromCharCode.apply(null, compressed));
+    }
 
-      function encodeMermaid(code) {
-        const compressed = pako.deflate(code, { level: 9 });
-        return btoa(
-          String.fromCharCode.apply(null, compressed)
-        );
-      }
+    window.$docsify = window.$docsify || {};
+    window.$docsify.plugins = (window.$docsify.plugins || []).concat(function (hook) {
 
-      window.$docsify = window.$docsify || {};
-      window.$docsify.plugins = (window.$docsify.plugins || []).concat(function (hook) {
+      // 1. Preserve Mermaid source BEFORE rendering
+      hook.beforeEach(function (content) {
+        return content.replace(
+          /```mermaid([\s\S]*?)```/g,
+          function (_, code) {
+            const cleaned = code.trim();
 
-        // Capture Mermaid source BEFORE rendering
-        hook.beforeEach(function (content) {
-          mermaidSources.length = 0;
-
-          const regex = /```mermaid([\s\S]*?)```/g;
-          let match;
-
-          while ((match = regex.exec(content)) !== null) {
-            mermaidSources.push(match[1].trim());
+            // IMPORTANT:
+            // We cannot embed <script> directly inside a template literal.
+            // So we break the word "script" to avoid HTML parsing issues.
+            return (
+              '<scr' + 'ipt type="text/plain" class="mermaid-source">\n' +
+              cleaned +
+              '\n</scr' + 'ipt>\n\n' +
+              '```mermaid\n' +
+              cleaned +
+              '\n```'
+            );
           }
+        );
+      });
 
-          return content;
-        });
+      // 2. Attach Mermaid Live links AFTER rendering
+      hook.doneEach(function () {
+        const diagrams = document.querySelectorAll('.mermaid');
+        const sources = document.querySelectorAll('.mermaid-source');
 
-        // Attach links AFTER rendering
-        hook.doneEach(function () {
-          const diagrams = document.querySelectorAll('.mermaid');
+        diagrams.forEach((diagram, index) => {
+          if (diagram.dataset.mermaidLinked) return;
+          if (!sources[index]) return;
 
-          diagrams.forEach((el, index) => {
-            if (el.dataset.mermaidLinked) return;
-            if (!mermaidSources[index]) return;
+          const source = sources[index].textContent.trim();
+          const encoded = encodeMermaid(source);
+          const url = `https://mermaid.live/edit#pako:${encoded}`;
 
-            const encoded = encodeMermaid(mermaidSources[index]);
-            const url = `https://mermaid.live/edit#pako:${encoded}`;
+          const link = document.createElement('div');
+          link.style.margin = '0.5em 0';
+          link.innerHTML = `
+            <a href="${url}" target="_blank" rel="noopener">
+              ✏️ Edit in Mermaid Live
+            </a>
+          `;
 
-            const link = document.createElement('div');
-            link.style.margin = '0.5em 0';
-            link.innerHTML = `
-              <a href="${url}" target="_blank" rel="noopener">
-                ✏️ Edit in Mermaid Live
-              </a>
-            `;
-
-            el.after(link);
-            el.dataset.mermaidLinked = 'true';
-          });
+          diagram.after(link);
+          diagram.dataset.mermaidLinked = 'true';
         });
       });
-    })();
-    </script>
+    });
+  })();
+  </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+
+  
   <script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docsify-mermaid/dist/docsify-mermaid.min.js"></script>
