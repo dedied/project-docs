@@ -30,6 +30,9 @@ CREATE TABLE public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   is_premium BOOLEAN NOT NULL DEFAULT FALSE,
   stripe_customer_id TEXT,
+  premium_disclaimer_text TEXT,
+  premium_disclaimer_version TEXT,
+  premium_disclaimer_accepted_date TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -206,6 +209,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.workouts TO authenticated;
 GRANT SELECT, INSERT ON public.profiles TO authenticated;
 REVOKE UPDATE ON public.profiles FROM authenticated;
 GRANT UPDATE (updated_at) ON public.profiles TO authenticated;
+
 
 -- =========================================
 -- Stripe webhook idempotency & audit table
@@ -394,7 +398,23 @@ serve(async (req) => {
     // 6) ADMIN CLIENT
     const adminSupabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // 7) Create Stripe customer if needed (race‑safe)
+    // 7) Record disclaimer acceptance
+    const DISCLAIMER_VERSION = requireEnv("PREMIUM_DISCLAIMER_VERSION")
+    const DISCLAIMER_TEXT = requireEnv("PREMIUM_DISCLAIMER_TEXT")
+
+    const { error: disclaimerError } = await adminSupabase
+      .from("profiles")
+      .update({
+        premium_disclaimer_version: DISCLAIMER_VERSION,
+        premium_disclaimer_text: DISCLAIMER_TEXT,
+        premium_disclaimer_accepted_date: new Date().toISOString(),
+      })
+      .eq("id", user.id)
+
+    if (disclaimerError) throw disclaimerError
+
+
+    // 8) Create Stripe customer if needed (race‑safe)
     if (!customerId) {
       const { data: freshProfile, error: freshError } = await adminSupabase
         .from("profiles")
@@ -431,7 +451,7 @@ serve(async (req) => {
       }
     }
 
-    // 8) Create Checkout Session via REST API
+    // 9) Create Checkout Session via REST API
     const sessionRes = await fetch(
       "https://api.stripe.com/v1/checkout/sessions",
       {
@@ -764,3 +784,5 @@ serve(async (req) => {
     - `STRIPE_WEBHOOK_SIGNING_SECRET`
     - `SITE_URL`
     - `ENV` (prod or dev)
+    - `PREMIUM_DISCLAIMER_VERSION` (e.g., 2026-02-05)
+    - `PREMIUM_DISCLAIMER_TEXT`
