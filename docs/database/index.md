@@ -466,7 +466,7 @@ serve(async (req) => {
           "line_items[0][price]": STRIPE_PRICE_ID,
           "line_items[0][quantity]": "1",
           success_url: `${origin}?payment_success=true`,
-          cancel_url: `${origin}?payment_canceled=true`,
+          cancel_url: `${origin}?payment_cancelled=true`,
         }),
       }
     )
