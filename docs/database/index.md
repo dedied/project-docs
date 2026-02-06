@@ -398,23 +398,7 @@ serve(async (req) => {
     // 6) ADMIN CLIENT
     const adminSupabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // 7) Record disclaimer acceptance
-    const DISCLAIMER_VERSION = requireEnv("PREMIUM_DISCLAIMER_VERSION")
-    const DISCLAIMER_TEXT = requireEnv("PREMIUM_DISCLAIMER_TEXT")
-
-    const { error: disclaimerError } = await adminSupabase
-      .from("profiles")
-      .update({
-        premium_disclaimer_version: DISCLAIMER_VERSION,
-        premium_disclaimer_text: DISCLAIMER_TEXT,
-        premium_disclaimer_accepted_date: new Date().toISOString(),
-      })
-      .eq("id", user.id)
-
-    if (disclaimerError) throw disclaimerError
-
-
-    // 8) Create Stripe customer if needed (race‑safe)
+    // 7) Create Stripe customer if needed (race‑safe)
     if (!customerId) {
       const { data: freshProfile, error: freshError } = await adminSupabase
         .from("profiles")
@@ -451,7 +435,7 @@ serve(async (req) => {
       }
     }
 
-    // 9) Create Checkout Session via REST API
+    // 8) Create Checkout Session via REST API
     const sessionRes = await fetch(
       "https://api.stripe.com/v1/checkout/sessions",
       {
@@ -769,6 +753,134 @@ serve(async (req) => {
   }
 })
 
+
+```
+
+- `log-disclaimer-viewed` edge function
+```
+// supabase/functions/create-stripe-checkout/index.ts
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
+import { createClient } from "npm:@supabase/supabase-js@2.95.0"
+
+// -----------------------------
+// Environment helpers
+// -----------------------------
+function requireEnv(name: string): string {
+  const value = Deno.env.get(name)
+  if (!value) throw new Error(`Missing required env var: ${name}`)
+  return value
+}
+
+const ENV = Deno.env.get("ENV") ?? "prod"
+
+const SUPABASE_URL = requireEnv("SUPABASE_URL")
+const SUPABASE_ANON_KEY = requireEnv("SUPABASE_ANON_KEY")
+const SUPABASE_SERVICE_ROLE_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY")
+
+const SITE_URL = "https://fittrack-pro.app"
+
+// -----------------------------
+// Origin allow‑list
+// -----------------------------
+function isAllowedOrigin(origin: string | null): origin is string {
+  if (!origin) return false
+  if (origin === SITE_URL) return true
+  if (ENV === "dev" && origin === "http://localhost:5173") return true
+
+  try {
+    const url = new URL(origin)
+    const isPreview =
+      url.protocol === "https:" &&
+      url.hostname.startsWith("fittrack-") &&
+      url.hostname.endsWith("peppery-projects.vercel.app")
+    if (isPreview) return true
+  } catch {}
+
+  return false
+}
+
+function corsHeaders(origin: string) {
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  }
+}
+
+// -----------------------------
+// Main handler
+// -----------------------------
+serve(async (req) => {
+  const origin = req.headers.get("origin")
+
+  if (req.method === "OPTIONS") {
+    if (!isAllowedOrigin(origin)) return new Response("forbidden", { status: 403 })
+    return new Response(null, { status: 204, headers: corsHeaders(origin) })
+  }
+
+  if (req.method !== "POST") {
+    return new Response("method not allowed", { status: 405 })
+  }
+
+  if (!isAllowedOrigin(origin)) {
+    return new Response(JSON.stringify({ error: "Forbidden origin" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    })
+  }
+
+  try {
+    const userSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: {
+        headers: { Authorization: req.headers.get("Authorization") ?? "" },
+      },
+    })
+
+    const {
+      data: { user },
+      error: authError,
+    } = await userSupabase.auth.getUser()
+
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+      })
+    }
+
+    const adminSupabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+    const DISCLAIMER_VERSION = requireEnv("PREMIUM_DISCLAIMER_VERSION")
+    const DISCLAIMER_TEXT = requireEnv("PREMIUM_DISCLAIMER_TEXT")
+
+    const { error: disclaimerError } = await adminSupabase
+      .from("profiles")
+      .update({
+        premium_disclaimer_version: DISCLAIMER_VERSION,
+        premium_disclaimer_text: DISCLAIMER_TEXT,
+        premium_disclaimer_accepted_date: new Date().toISOString(),
+      })
+      .eq("id", user.id)
+
+    if (disclaimerError) throw disclaimerError
+
+    // SUCCESS RESPONSE — REQUIRED
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+    })
+
+  } catch (err) {
+    console.error("log-disclaimer-viewed error:", err)
+
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+    })
+  }
+})
 
 ```
 
