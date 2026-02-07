@@ -301,37 +301,9 @@ const STRIPE_PRICE_ID = requireEnv("STRIPE_PRICE_ID")
  */
 const SITE_URL = "https://fittrack-pro.app"
 
-// -----------------------------
-// Origin allow‑list
-// -----------------------------
-function isAllowedOrigin(origin: string | null): origin is string {
-  if (!origin) return false
-
-  // Production domain
-  if (origin === SITE_URL) return true
-
-  // Local dev (only when ENV=dev)
-  if (ENV === "dev" && origin === "http://localhost:5173") return true
-
-  // Vercel preview URLs
-  try {
-    const url = new URL(origin)
-    const isPreview =
-      url.protocol === "https:" &&
-      url.hostname.startsWith("fittrack-") &&
-      url.hostname.endsWith("peppery-projects.vercel.app")
-
-    if (isPreview) return true
-  } catch {
-    // ignore
-  }
-
-  return false
-}
-
-function corsHeaders(origin: string) {
+function corsHeaders() {
   return {
-    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Origin": "true",
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -345,10 +317,16 @@ function corsHeaders(origin: string) {
 serve(async (req) => {
   const origin = req.headers.get("origin")
 
+  if (ENV === "dev" && origin === SITE_URL) {
+  return new Response("Forbidden (dev backend does not accept prod site)", {
+    status: 403,
+  })
+}
+
+  
   // 1) CORS preflight
   if (req.method === "OPTIONS") {
-    if (!isAllowedOrigin(origin)) return new Response("forbidden", { status: 403 })
-    return new Response(null, { status: 204, headers: corsHeaders(origin) })
+    return new Response(null, { status: 204, headers: corsHeaders() })
   }
 
   // 2) Only POST
@@ -356,16 +334,8 @@ serve(async (req) => {
     return new Response("method not allowed", { status: 405 })
   }
 
-  // 3) Origin allow‑list
-  if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Forbidden origin" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    })
-  }
-
   try {
-    // 4) USER CLIENT (anon key + JWT)
+    // 3) USER CLIENT (anon key + JWT)
     const userSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: {
         headers: { Authorization: req.headers.get("Authorization") ?? "" },
@@ -380,11 +350,11 @@ serve(async (req) => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+        headers: { ...corsHeaders(), "Content-Type": "application/json" },
       })
     }
 
-    // 5) Fetch profile
+    // 4) Fetch profile
     const { data: profile, error: profileError } = await userSupabase
       .from("profiles")
       .select("stripe_customer_id")
@@ -395,10 +365,10 @@ serve(async (req) => {
 
     let customerId = profile?.stripe_customer_id ?? null
 
-    // 6) ADMIN CLIENT
+    // 5) ADMIN CLIENT
     const adminSupabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // 7) Create Stripe customer if needed (race‑safe)
+    // 6) Create Stripe customer if needed (race‑safe)
     if (!customerId) {
       const { data: freshProfile, error: freshError } = await adminSupabase
         .from("profiles")
@@ -435,7 +405,7 @@ serve(async (req) => {
       }
     }
 
-    // 8) Create Checkout Session via REST API
+    // 7) Create Checkout Session via REST API
     const sessionRes = await fetch(
       "https://api.stripe.com/v1/checkout/sessions",
       {
@@ -458,14 +428,14 @@ serve(async (req) => {
     const session = await sessionRes.json()
 
     return new Response(JSON.stringify({ url: session.url }), {
-      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+      headers: { ...corsHeaders(), "Content-Type": "application/json" },
     })
   } catch (err) {
     console.error("create-stripe-checkout error:", err)
 
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
-      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+      headers: { ...corsHeaders(), "Content-Type": "application/json" },
     })
   }
 })
@@ -757,10 +727,11 @@ serve(async (req) => {
 ```
 
 - `log-disclaimer-viewed` edge function
-```
-// supabase/functions/create-stripe-checkout/index.ts
+
+```ts
+// supabase/functions/log-disclaimer-viewed/index.ts
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
-import { createClient } from "npm:@supabase/supabase-js@2.95.0"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 // -----------------------------
 // Environment helpers
@@ -779,29 +750,10 @@ const SUPABASE_SERVICE_ROLE_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY")
 
 const SITE_URL = "https://fittrack-pro.app"
 
-// -----------------------------
-// Origin allow‑list
-// -----------------------------
-function isAllowedOrigin(origin: string | null): origin is string {
-  if (!origin) return false
-  if (origin === SITE_URL) return true
-  if (ENV === "dev" && origin === "http://localhost:5173") return true
 
-  try {
-    const url = new URL(origin)
-    const isPreview =
-      url.protocol === "https:" &&
-      url.hostname.startsWith("fittrack-") &&
-      url.hostname.endsWith("peppery-projects.vercel.app")
-    if (isPreview) return true
-  } catch {}
-
-  return false
-}
-
-function corsHeaders(origin: string) {
+function corsHeaders() {
   return {
-    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Origin": "true",
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -815,22 +767,22 @@ function corsHeaders(origin: string) {
 serve(async (req) => {
   const origin = req.headers.get("origin")
 
+  if (ENV === "dev" && origin === SITE_URL) {
+  return new Response("Forbidden (dev backend does not accept prod site)", {
+    status: 403,
+  })
+}
+
+
   if (req.method === "OPTIONS") {
-    if (!isAllowedOrigin(origin)) return new Response("forbidden", { status: 403 })
-    return new Response(null, { status: 204, headers: corsHeaders(origin) })
+    return new Response(null, { status: 204, headers: corsHeaders() })
   }
 
   if (req.method !== "POST") {
     return new Response("method not allowed", { status: 405 })
   }
 
-  if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Forbidden origin" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    })
-  }
-
+ 
   try {
     const userSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: {
@@ -846,7 +798,7 @@ serve(async (req) => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+        headers: { ...corsHeaders(), "Content-Type": "application/json" },
       })
     }
 
@@ -869,7 +821,7 @@ serve(async (req) => {
     // SUCCESS RESPONSE — REQUIRED
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+      headers: { ...corsHeaders(), "Content-Type": "application/json" },
     })
 
   } catch (err) {
@@ -877,10 +829,11 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
-      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+      headers: { ...corsHeaders(), "Content-Type": "application/json" },
     })
   }
 })
+
 
 ```
 
@@ -895,6 +848,6 @@ serve(async (req) => {
     - `STRIPE_PRICE_ID`
     - `STRIPE_WEBHOOK_SIGNING_SECRET`
     - `SITE_URL`
-    - `ENV` (prod or dev)
+    - `ENV` (dev or prod)
     - `PREMIUM_DISCLAIMER_VERSION` (e.g., 2026-02-05)
     - `PREMIUM_DISCLAIMER_TEXT`
