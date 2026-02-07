@@ -30,6 +30,8 @@ CREATE TABLE public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   is_premium BOOLEAN NOT NULL DEFAULT FALSE,
   stripe_customer_id TEXT,
+  body_weight_kg DOUBLE PRECISION, -- Stores user CURRENT weight in KG
+  goals JSONB DEFAULT '{}'::jsonb, -- Stores user goals for strength, cardio, etc.
   premium_disclaimer_text TEXT,
   premium_disclaimer_version TEXT,
   premium_disclaimer_accepted_date TIMESTAMPTZ,
@@ -229,6 +231,7 @@ CREATE TABLE public.stripe_events (
   id TEXT PRIMARY KEY,                         -- Stripe event ID (evt_*)
   type TEXT NOT NULL,                          -- Event type (checkout.session.completed, etc)
   stripe_customer_id TEXT,                     -- cus_* (nullable for non-customer events)
+  owner_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   processed_at TIMESTAMPTZ,
   status TEXT NOT NULL DEFAULT 'received',     -- received | processed | failed
@@ -681,6 +684,15 @@ serve(async (req) => {
         .update({ is_premium: true })
         .eq("stripe_customer_id", customerId)
         .select("id")
+
+      // Attach owner_id to stripe_events
+      await adminSupabase
+        .from("stripe_events")
+        .update({
+          owner_id: updated[0].id
+        })
+        .eq("id", event.id)
+
 
       if (updateErr) throw updateErr
 
