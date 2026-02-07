@@ -301,9 +301,9 @@ const STRIPE_PRICE_ID = requireEnv("STRIPE_PRICE_ID")
  */
 const SITE_URL = "https://fittrack-pro.app"
 
-function corsHeaders() {
+function corsHeaders(origin: string) {
   return {
-    "Access-Control-Allow-Origin": "true",
+    "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -326,7 +326,7 @@ serve(async (req) => {
   
   // 1) CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders() })
+    return new Response(null, { status: 204, headers: corsHeaders(origin) })
   }
 
   // 2) Only POST
@@ -350,7 +350,7 @@ serve(async (req) => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders(), "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       })
     }
 
@@ -428,18 +428,17 @@ serve(async (req) => {
     const session = await sessionRes.json()
 
     return new Response(JSON.stringify({ url: session.url }), {
-      headers: { ...corsHeaders(), "Content-Type": "application/json" },
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
     })
   } catch (err) {
     console.error("create-stripe-checkout error:", err)
 
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
-      headers: { ...corsHeaders(), "Content-Type": "application/json" },
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
     })
   }
 })
-
 ```
 
 - stripe-webhook
@@ -751,9 +750,9 @@ const SUPABASE_SERVICE_ROLE_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY")
 const SITE_URL = "https://fittrack-pro.app"
 
 
-function corsHeaders() {
+function corsHeaders(origin: string) {
   return {
-    "Access-Control-Allow-Origin": "true",
+    "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -766,7 +765,7 @@ function corsHeaders() {
 // -----------------------------
 serve(async (req) => {
   const origin = req.headers.get("origin")
-
+  
   if (ENV === "dev" && origin === SITE_URL) {
   return new Response("Forbidden (dev backend does not accept prod site)", {
     status: 403,
@@ -775,7 +774,7 @@ serve(async (req) => {
 
 
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders() })
+    return new Response(null, { status: 204, headers: corsHeaders(origin) })
   }
 
   if (req.method !== "POST") {
@@ -798,7 +797,7 @@ serve(async (req) => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders(), "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       })
     }
 
@@ -821,7 +820,7 @@ serve(async (req) => {
     // SUCCESS RESPONSE — REQUIRED
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: { ...corsHeaders(), "Content-Type": "application/json" },
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
     })
 
   } catch (err) {
@@ -829,7 +828,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
-      headers: { ...corsHeaders(), "Content-Type": "application/json" },
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
     })
   }
 })
