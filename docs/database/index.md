@@ -77,10 +77,15 @@ CREATE TABLE public.workouts (
   type TEXT NOT NULL,
   reps DOUBLE PRECISION NOT NULL,
   weight DOUBLE PRECISION,
+  distance DOUBLE PRECISION,  -- Distance (km/miles)
+  -- Time Splits
+  duration_minutes INTEGER,
+  duration_seconds INTEGER,
   owner_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
 
 ALTER TABLE public.workouts ENABLE ROW LEVEL SECURITY;
 
